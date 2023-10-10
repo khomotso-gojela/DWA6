@@ -1,22 +1,32 @@
 import { books, authors, genres, BOOKS_PER_PAGE } from './data.js'
 
+/**
+ * fetch a html element
+ * @param {string} element 
+ * @returns {HTMLElement}
+ */
+function getElement(element) {
+    console.log(`[data-${element}]`)
+    return document.querySelector(`[data-${element}]`)
+}
+
 const html = {
     showmore: {
-        list: document.querySelector('[data-list-items]'),
-        listBtn: document.querySelector('[data-list-button]'),
-        message: document.querySelector('[data-list-message]'),
-        close: document.querySelector('[data-list-close]'),
-        active: document.querySelector('[data-list-active]')
+        list: getElement('list-items'),
+        listBtn: getElement('list-button'),//document.querySelector('[data-list-button]'),
+        message: getElement('list-message'),//document.querySelector('[data-list-message]'),
+        close: getElement('list-close'),//document.querySelector('[data-list-close]'),
+        active: getElement('list-active') //document.querySelector('[data-list-active]')
     },
 
     search: {
-        authors: document.querySelector('[data-search-authors]'),
-        genres: document.querySelector('[data-search-genres]'),
-        cancel: document.querySelector('[data-search-cancel]'),
-        btn: document.querySelector('[data-header-search]'),
-        overlay:document.querySelector('[data-search-overlay]'),
-        title: document.querySelector('[data-search-title]'),
-        form: document.querySelector('[data-search-form]')
+        authors: getElement('search-authors'),//document.querySelector('[data-search-authors]'),
+        genres: getElement('search-genres'),//document.querySelector('[data-search-genres]'),
+        cancel: getElement('search-cancel'),//document.querySelector('[data-search-cancel]'),
+        btn: getElement('header-search'),//document.querySelector('[data-header-search]'),
+        overlay: getElement('search-overlay'),//document.querySelector('[data-search-overlay]'),
+        title: getElement('search-title'),//document.querySelector('[data-search-title]'),
+        form: getElement('search-form'),//document.querySelector('[data-search-form]')
     },
 
     setting: {
@@ -37,8 +47,45 @@ const html = {
     }
 }
 
+/**
+ * sets theme to night theme
+ */
+function setNightTheme() {
+    document.documentElement.style.setProperty('--color-dark', '255, 255, 255');
+    document.documentElement.style.setProperty('--color-light', '10, 10, 20');
+}
+
+/**
+ * sets theme to day theme
+ */
+function setDayTheme() {
+    document.documentElement.style.setProperty('--color-dark', '10, 10, 20');
+    document.documentElement.style.setProperty('--color-light', '255, 255, 255');
+}
+
 let page = 1; //number of pages displayed
 let matches = books //all books in our data file
+
+/**
+ * Set inner html for book previews
+ * @param {string} author 
+ * @param {string} image 
+ * @param {string} title 
+ * @returns {string}
+ */
+function previewHTML(author, image, title) {
+    return `
+    <img
+        class="preview__image"
+        src="${image}"
+    />
+    
+    <div class="preview__info">
+        <h3 class="preview__title">${title}</h3>
+        <div class="preview__author">${authors[author]}</div>
+    </div>
+`
+}
 
 const starting = document.createDocumentFragment()
 
@@ -47,17 +94,7 @@ for (const { author, id, image, title } of matches.slice(0, BOOKS_PER_PAGE)) {
     element.classList = 'preview'
     element.setAttribute('data-preview', id)
 
-    element.innerHTML = `
-        <img
-            class="preview__image"
-            src="${image}"
-        />
-        
-        <div class="preview__info">
-            <h3 class="preview__title">${title}</h3>
-            <div class="preview__author">${authors[author]}</div>
-        </div>
-    `
+    element.innerHTML = previewHTML(author, image, title)
 
     starting.appendChild(element)
 }
@@ -94,42 +131,67 @@ html.search.authors.appendChild(formOptions(authors))
 
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     html.setting.theme.value = 'night'
-    document.documentElement.style.setProperty('--color-dark', '255, 255, 255');
-    document.documentElement.style.setProperty('--color-light', '10, 10, 20');
+    setNightTheme()
 } else {
     html.setting.theme.value = 'day'
-    document.documentElement.style.setProperty('--color-dark', '10, 10, 20');
-    document.documentElement.style.setProperty('--color-light', '255, 255, 255');
+    setDayTheme()
 }
 
 html.showmore.listBtn.innerText = `Show more (${books.length - BOOKS_PER_PAGE})`
 html.showmore.listBtn.disabled = (matches.length - (page * BOOKS_PER_PAGE)) > 0
 
-html.showmore.listBtn.innerHTML = `
+/**
+ * updates the showmore button inner Text
+ * @returns {string}
+ */
+function showmoreHtml() {
+    return `
     <span>Show more</span>
     <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
 `
+}
 
-html.search.cancel.addEventListener('click', () => {
-    html.search.overlay.open = false
-})
+html.showmore.listBtn.innerHTML = showmoreHtml()
 
-html.setting.cancel.addEventListener('click', () => {
-    html.setting.overlay.open = false
-})
+/**
+ * Opens and closes overlays
+ * @param {HTMLElement} element 
+ */
+function openClose(element,overlay) {
+    element.addEventListener('click',()=>{
+        if (overlay.open == true) {
+            overlay.open = false
+        } else {
+            overlay.open = true
+        }
+    })
+}
 
-html.search.btn.addEventListener('click', () => {
-    html.search.overlay.open = true 
-    html.search.title.focus()
-})
+// html.search.cancel.addEventListener('click', () => {
+//     html.search.overlay.open = false
+// })
+openClose(html.search.cancel, html.search.overlay)
 
-html.setting.btn.addEventListener('click', () => {
-    html.setting.overlay.open = true 
-})
+// html.setting.cancel.addEventListener('click', () => {
+//     html.setting.overlay.open = false
+// })
+openClose(html.setting.cancel, html.setting.overlay)
 
-html.showmore.close.addEventListener('click', () => {
-    html.showmore.active.open = false
-})
+// html.search.btn.addEventListener('click', () => {
+//     html.search.overlay.open = true 
+//     html.search.title.focus()
+// })
+openClose(html.search.btn, html.search.overlay)
+
+// html.setting.btn.addEventListener('click', () => {
+//     html.setting.overlay.open = true 
+// })
+openClose(html.setting.btn, html.setting.overlay)
+
+// html.showmore.close.addEventListener('click', () => {
+//     html.showmore.active.open = false
+// })
+openClose(html.showmore.close, html.showmore.active)
 
 html.setting.form.addEventListener('submit', (event) => {
     event.preventDefault()
@@ -137,11 +199,9 @@ html.setting.form.addEventListener('submit', (event) => {
     const { theme } = Object.fromEntries(formData)
 
     if (theme === 'night') {
-        document.documentElement.style.setProperty('--color-dark', '255, 255, 255');
-        document.documentElement.style.setProperty('--color-light', '10, 10, 20');
+        setNightTheme()
     } else {
-        document.documentElement.style.setProperty('--color-dark', '10, 10, 20');
-        document.documentElement.style.setProperty('--color-light', '255, 255, 255');
+        setDayTheme()
     }
     
     html.setting.overlay.open = false
@@ -187,17 +247,7 @@ html.search.form.addEventListener('submit', (event) => {
         element.classList = 'preview'
         element.setAttribute('data-preview', id)
     
-        element.innerHTML = `
-            <img
-                class="preview__image"
-                src="${image}"
-            />
-            
-            <div class="preview__info">
-                <h3 class="preview__title">${title}</h3>
-                <div class="preview__author">${authors[author]}</div>
-            </div>
-        `
+        element.innerHTML = previewHTML(author, image, title)
 
         newItems.appendChild(element)
     }
@@ -205,10 +255,7 @@ html.search.form.addEventListener('submit', (event) => {
     html.showmore.list.appendChild(newItems)
     html.showmore.listBtn.disabled = (matches.length - (page * BOOKS_PER_PAGE)) < 1
 
-    html.showmore.listBtn.innerHTML = `
-        <span>Show more</span>
-        <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
-    `
+    html.showmore.listBtn.innerHTML = showmoreHtml()
 
     window.scrollTo({top: 0, behavior: 'smooth'});
     html.search.overlay.open = false
@@ -222,17 +269,7 @@ html.showmore.listBtn.addEventListener('click', () => {
         element.classList = 'preview'
         element.setAttribute('data-preview', id)
     
-        element.innerHTML = `
-            <img
-                class="preview__image"
-                src="${image}"
-            />
-            
-            <div class="preview__info">
-                <h3 class="preview__title">${title}</h3>
-                <div class="preview__author">${authors[author]}</div>
-            </div>
-        `
+        element.innerHTML = previewHTML(author, image, title)
 
         docfragment.appendChild(element)
     }
